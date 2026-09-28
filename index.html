@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>OffCourse</title>
+<style>
+:root{--bg:#faf8f5;--card:#fff;--ink:#2a2540;--mut:#7b7594;--pu:#5b3fd0;--pl:#ece8fb;--gr:#2f9e78;--gl:#dff3ea;--line:#ebe7f2;--red:#d9534f}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+header{display:flex;align-items:center;gap:10px;padding:14px 22px;background:var(--card);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+.logo{font-weight:700;font-size:21px;color:var(--pu);margin-right:auto;letter-spacing:-.3px}
+button{font:inherit;cursor:pointer;border-radius:10px;border:1px solid var(--line);background:#fff;padding:8px 14px;color:var(--ink)}
+button:hover{border-color:var(--pu)}button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--pu);outline-offset:2px}
+button.p{background:var(--pu);color:#fff;border-color:var(--pu)}button.g{background:none;border:0;color:var(--mut);padding:8px}
+.app{display:flex;max-width:1200px;margin:0 auto}
+nav{width:190px;padding:18px 12px;display:flex;flex-direction:column;gap:4px;flex:none}
+nav button{text-align:left;border:0;background:none;padding:10px 14px;color:var(--mut)}
+nav button.on{background:var(--pl);color:var(--pu);font-weight:600}
+main{flex:1;padding:18px 22px;min-width:0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;margin-bottom:16px;box-shadow:0 2px 12px #5b3fd00d}
+h2{margin:0 0 4px;font-size:19px}h3{margin:0 0 6px;font-size:16px}p{margin:6px 0}.mut{color:var(--mut);font-size:13px}
+.row{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:12px 0;border-top:1px solid var(--line);flex-wrap:wrap}
+.hd{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+.wrap{overflow-x:auto}.grid{display:grid;grid-template-columns:48px repeat(7,1fr);min-width:660px}
+.dh{text-align:center;font-weight:600;padding:6px 0;font-size:13px}
+.tc div{height:40px;font-size:11px;color:var(--mut);text-align:right;padding-right:6px;margin-top:-7px}
+.col{position:relative;overflow:hidden;border-left:1px solid var(--line);background:repeating-linear-gradient(#fff 0 39px,var(--line) 39px 40px)}
+.col.over{background-color:#fff1f0}
+.b{position:absolute;left:3px;right:3px;border-radius:8px;padding:3px 6px;font-size:11.5px;overflow:hidden;cursor:pointer;line-height:1.25}
+.class,.fixed{background:#e6e4ec;color:#4a4560}.study{background:var(--pu);color:#fff}.group{background:var(--gr);color:#fff}
+.lg{display:flex;gap:14px;font-size:12px;color:var(--mut);flex-wrap:wrap}.lg i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px}
+.wl{display:grid;grid-template-columns:40px 1fr 40px;gap:10px;align-items:center;margin:8px 0;font-size:13px}
+.bar{height:9px;background:var(--pl);border-radius:6px;overflow:hidden}.bar i{display:block;height:100%;background:var(--pu);border-radius:6px}.bar.warn i{background:var(--red)}
+.tag{font-size:12px;padding:2px 9px;border-radius:20px;background:var(--pl);color:var(--pu);display:inline-block}.tag.g{background:var(--gl);color:var(--gr)}
+.warn{color:var(--red);font-size:13px}.ok{opacity:.55}
+dialog{border:0;border-radius:16px;padding:22px;width:min(400px,92vw);box-shadow:0 10px 40px #0004}dialog::backdrop{background:#2a254066}
+label{display:block;font-size:13px;color:var(--mut);margin-top:10px}
+input,select{width:100%;font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:10px;margin-top:4px;background:#fff;color:var(--ink)}
+input[type=checkbox]{width:auto;margin:0 6px 0 0}
+#toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 18px;border-radius:12px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:20}#toast.on{opacity:1}
+@media(max-width:760px){.app{flex-direction:column}nav{width:100%;flex-direction:row;overflow-x:auto;padding:8px 12px}nav button{white-space:nowrap}main{padding:14px}header{padding:12px 14px}}
+</style></head><body>
+<header><div class="logo">OffCourse</div><button onclick="clearPlan()">Clear plan</button><button class="p" onclick="gen()">Generate my plan</button></header>
+<div class="app">
+<nav>
+<button data-t="week" onclick="tab='week';render()">Week</button>
+<button data-t="assign" onclick="tab='assign';render()">Assignments</button>
+<button data-t="classes" onclick="tab='classes';render()">Classes</button>
+<button data-t="friends" onclick="tab='friends';render()">Friends</button>
+<button data-t="settings" onclick="tab='settings';render()">Settings</button>
+</nav>
+<main></main></div>
+<dialog id="dlg"></dialog><div id="toast"></div>
+<script>
+const D=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],$=s=>document.querySelector(s),uid=()=>Math.random().toString(36).slice(2,9);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmt=h=>{const H=Math.floor(h),m=Math.round((h-H)*60);return(H%12||12)+(m?':'+String(m).padStart(2,'0'):'')+(H<12?'am':'pm')};
+const tm=v=>{const[a,b]=v.split(':');return +a+b/60},tv=h=>String(Math.floor(h)).padStart(2,'0')+':'+String(Math.round(h%1*60)).padStart(2,'0');
+const dayOpt=v=>D.map((x,i)=>`<option value="${i}" ${i==v?'selected':''}>${x}</option>`).join('');
+const FR=[
+{n:'Mei',c:['Machine Learning','Calculus'],share:1,due:[3,4],b:[[0,8,9.5],[0,18,20],[1,10,11.5],[2,8,9.5],[2,13,15],[3,10,11.5],[4,14,16]]},
+{n:'Jun',c:['Physics','Machine Learning'],share:1,due:[4,6],b:[[0,14,15.5],[1,10,11.5],[1,19,21],[2,9,12],[3,10,11.5],[4,10,11.5]]},
+{n:'Lin',c:['English'],share:0,due:[5],b:[[0,10,12],[2,13,14.5],[3,14,16],[4,9,11]]},
+{n:'Wei',c:['Calculus','Physics'],share:1,due:[3,6],b:[[0,8,9.5],[0,14,15.5],[2,8,9.5],[3,16,18],[4,10,11.5]]}];
+const SS0=[
+{id:'s1',by:'Mei',topic:'Machine Learning revision',type:'Focus study',day:1,s:15,e:17,place:'Library 2F',max:4,going:['Mei','Jun'],course:'Machine Learning'},
+{id:'s2',by:'Jun',topic:'Physics lab report group',type:'Group project',day:3,s:19,e:21,place:'Study room B',max:3,going:['Jun'],course:'Physics'},
+{id:'s3',by:'Lin',topic:'Coffee walk, no laptops',type:'Study break',day:2,s:16,e:17,place:'Campus cafe',max:3,going:['Lin'],course:''}];
+const mk=()=>({ev:[],as:[],ss:structuredClone(SS0),share:{},dis:[],miss:[],cfg:{cap:5,from:8,to:22,len:1.5,brk:.25}});
+let S;try{S=JSON.parse(localStorage.getItem('offcourse'))}catch(e){}S=S||mk();
+let tab='week',pick=[],SG=[];
+const save=()=>{try{localStorage.setItem('offcourse',JSON.stringify(S))}catch(e){}};
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(toast.i);toast.i=setTimeout(()=>t.classList.remove('on'),2600)}
+const hrs=e=>e.e-e.s,isW=e=>e.kind==='study'||e.kind==='group';
+const busyOf=d=>S.ev.filter(e=>e.day===d).map(e=>[e.s,e.e]),fBusy=(f,d)=>f.b.filter(x=>x[0]===d).map(x=>[x[1],x[2]]);
+function free(d,list,min=1){const a=[...list].sort((x,y)=>x[0]-y[0]);let t=S.cfg.from,r=[];for(const[s,e]of a){if(s-t>=min)r.push([t,s]);t=Math.max(t,e)}if(S.cfg.to-t>=min)r.push([t,S.cfg.to]);return r}
+const myCourses=()=>[...new Set(S.ev.filter(e=>e.kind==='class').map(e=>e.title).concat(S.as.map(a=>a.course)))];
+const load=d=>S.ev.filter(e=>e.day===d&&isW(e)).reduce((t,e)=>t+hrs(e),0);
+const done=a=>S.ev.filter(e=>e.aid===a.id||(e.kind==='group'&&e.course===a.course)).reduce((t,e)=>t+hrs(e),0);
+
+function ask(t,f,cb,del){const d=$('#dlg');d.innerHTML=`<h2>${t}</h2><form>${f}<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:18px"><button type="button" onclick="dlg.close()">Cancel</button>${del?'<button type="button" id="del">Delete</button>':''}<button class="p">Save</button></div></form>`;
+d.querySelector('form').onsubmit=e=>{e.preventDefault();if(cb(Object.fromEntries(new FormData(e.target)))===false)return;d.close();render()};
+if(del)$('#del').onclick=()=>{del();save();d.close();render()};d.showModal()}
+
+function editAs(id){const a=S.as.find(x=>x.id===id)||{name:'',course:'',due:3,h:2,pr:'Medium'};
+ask(id?'Edit assignment':'New assignment',`<label>Name<input name="name" required value="${esc(a.name)}"></label><label>Course<input name="course" required list="cl" value="${esc(a.course)}"></label><datalist id="cl">${myCourses().map(c=>`<option>${esc(c)}`).join('')}</datalist><label>Due day<select name="due">${dayOpt(a.due)}</select></label><label>Hours needed<input name="h" type="number" min=".5" step=".5" required value="${a.h}"></label><label>Priority<select name="pr">${['High','Medium','Low'].map(p=>`<option ${p==a.pr?'selected':''}>${p}`).join('')}</select></label>`,
+f=>{const o={name:f.name,course:f.course,due:+f.due,h:+f.h,pr:f.pr};id?Object.assign(a,o):S.as.push({id:uid(),...o});save()},id&&(()=>{S.as=S.as.filter(x=>x!==a);S.ev=S.ev.filter(e=>e.aid!==id)}))}
+
+function fixed(e){const a=e||{title:'',day:0,s:9,e:10,kind:'class'};
+ask(e?'Edit event':'Add class or event',`<label>Title<input name="title" required value="${esc(a.title)}"></label><label>Day<select name="day">${dayOpt(a.day)}</select></label><label>Start<input type="time" name="s" required value="${tv(a.s)}"></label><label>End<input type="time" name="e" required value="${tv(a.e)}"></label><label>Type<select name="kind"><option value="class" ${a.kind=='class'?'selected':''}>Class<option value="fixed" ${a.kind=='fixed'?'selected':''}>Other busy time</select></label>`,
+f=>{const s=tm(f.s),en=tm(f.e);if(en<=s){toast('End time must be after start time');return false}const o={title:f.title,day:+f.day,s,e:en,kind:f.kind};e?Object.assign(e,o):S.ev.push({id:uid(),...o});save()},e&&(()=>{S.ev=S.ev.filter(x=>x!==e)}))}
+
+function editEv(id){const e=S.ev.find(x=>x.id===id);if(!e)return;
+if(isW(e))return ask(esc(e.title),`<p class="mut">${D[e.day]} ${fmt(e.s)}–${fmt(e.e)}</p>`,()=>{},()=>{S.ev=S.ev.filter(x=>x!==e)});fixed(e)}
+
+function newSession(){ask('Create a session',`<label>Topic<input name="topic" required></label><label>Type<select name="type"><option>Focus study<option>Group project<option>Study break</select></label><label>Course (optional)<input name="course" list="cl"></label><datalist id="cl">${myCourses().map(c=>`<option>${esc(c)}`).join('')}</datalist><label>Day<select name="day">${dayOpt(0)}</select></label><label>Start<input type="time" name="s" required value="15:00"></label><label>End<input type="time" name="e" required value="17:00"></label><label>Place<input name="place" value="Library"></label><label>Max people<select name="max"><option>2<option selected>3<option>4</select></label>`,
+f=>{const s=tm(f.s),e=tm(f.e);if(e<=s){toast('End time must be after start time');return false}const x={id:uid(),by:'You',topic:f.topic,type:f.type,day:+f.day,s,e,place:f.place,max:+f.max,going:['You'],course:f.course};S.ss.push(x);S.ev.push({id:uid(),title:x.topic,day:x.day,s,e,kind:'group',sid:x.id,course:x.course});save();toast('Session created')})}
+
+function gen(){const c=S.cfg,P={High:0,Medium:1,Low:2},miss=[];S.ev=S.ev.filter(e=>e.kind!=='study');
+const fits=(d,t,u)=>!S.ev.some(e=>e.day===d&&e.s-c.brk<t+u&&e.e+c.brk>t);
+S.as.filter(a=>!a.done).sort((a,b)=>a.due-b.due||P[a.pr]-P[b.pr]).forEach(a=>{
+let need=a.h-done(a),placed=true;
+while(need>.01&&placed){placed=false;
+for(let d=0;d<=a.due&&need>.01;d++){const u=Math.min(c.len,need);if(load(d)+u>c.cap)continue;
+for(let t=c.from;t+u<=c.to;t+=.25)if(fits(d,t,u)){S.ev.push({id:uid(),title:a.name,day:d,s:t,e:t+u,kind:'study',aid:a.id});need-=u;placed=true;break}}}
+if(need>.01)miss.push({n:a.name,t:`Needs ${need.toFixed(1)}h more but there is no free time before ${D[a.due]}.`})});
+S.miss=miss;save();tab='week';render();toast(miss.length?'Plan ready, with some warnings':'Your plan is ready')}
+function clearPlan(){S.ev=S.ev.filter(e=>e.kind!=='study');S.miss=[];save();render();toast('Study blocks cleared')}
+
+function sample(){const k=(t,d,s,e)=>({id:uid(),title:t,day:d,s,e,kind:'class'});
+S.ev=[k('Calculus',0,8,9.5),k('Calculus',2,8,9.5),k('Machine Learning',1,10,11.5),k('Machine Learning',3,10,11.5),k('Physics',0,14,15.5),k('Physics',4,10,11.5),k('English',2,13,14.5),{id:uid(),title:'Dinner with roommates',day:4,s:18,e:20,kind:'fixed'}];
+S.as=[{id:uid(),name:'Calculus problem set',course:'Calculus',due:3,h:4,pr:'High'},{id:uid(),name:'ML project report',course:'Machine Learning',due:4,h:6,pr:'High'},{id:uid(),name:'Physics lab report',course:'Physics',due:6,h:3,pr:'Medium'},{id:uid(),name:'English essay draft',course:'English',due:5,h:4,pr:'Low'}];
+S.miss=[];save();render();toast('Sample week loaded')}
+
+function sugs(){const out=[],mine=myCourses();
+FR.forEach(f=>{const sh=S.share[f.n]??f.share,both=d=>free(d,busyOf(d).concat(fBusy(f,d)));
+if(sh){f.c.filter(c=>mine.includes(c)).forEach(c=>{for(let d=0;d<7;d++){const s=both(d).find(x=>x[1]-x[0]>=1.5);if(s){out.push({k:'c'+f.n+c,sc:3,t:`${f.n} is also in ${c}. You both are free ${D[d]} ${fmt(s[0])}–${fmt(s[0]+1.5)}.`,d,s:s[0],e:s[0]+1.5,ti:`${c} with ${f.n}`,c});break}}});
+S.as.filter(a=>!a.done&&f.due.includes(a.due)&&a.due>0).slice(0,1).forEach(a=>{const d=a.due-1,s=both(d).find(x=>x[1]-x[0]>=2);if(s)out.push({k:'d'+f.n+a.id,sc:2,t:`You and ${f.n} both have work due ${D[a.due]}. Study together ${D[d]} ${fmt(s[0])}–${fmt(s[0]+2)}?`,d,s:s[0],e:s[0]+2,ti:`Study with ${f.n}`,c:a.course})})}
+for(let d=0;d<5;d++)if(both(d).some(x=>x[0]<=12&&x[1]>=13)){out.push({k:'l'+f.n,sc:1,t:`You and ${f.n} are both free ${D[d]} 12–1pm. Take a lunch break together?`,d,s:12,e:13,ti:`Lunch with ${f.n}`,c:''});break}});
+return out.filter(x=>!S.dis.includes(x.k)).sort((a,b)=>b.sc-a.sc).slice(0,6)}
+function takeSug(i){const x=SG[i];S.ev.push({id:uid(),title:x.ti,day:x.d,s:x.s,e:x.e,kind:'group',course:x.c});S.dis.push(x.k);save();render();toast('Added to your week')}
+function dismiss(i){S.dis.push(SG[i].k);save();render()}
+const joined=s=>S.ev.some(e=>e.sid===s.id);
+function join(id){const s=S.ss.find(x=>x.id===id);if(joined(s)){S.ev=S.ev.filter(e=>e.sid!==id);s.going=s.going.filter(n=>n!=='You')}else{S.ev.push({id:uid(),title:s.topic,day:s.day,s:s.s,e:s.e,kind:'group',sid:id,course:s.course});s.going.push('You');toast('You joined. It is on your calendar.')}save();render()}
+function togglePick(n){pick=pick.includes(n)?pick.filter(x=>x!==n):[...pick,n];render()}
+function book(d,s,e,type){const names=pick.join(', ');S.ev.push({id:uid(),title:`${type} with ${names}`,day:d,s,e,kind:'group',course:''});save();render();toast('Invite sent (sample) and added to your week')}
+function setCfg(k,v){S.cfg[k]=+v;save();render()}
+function setShare(n,v){S.share[n]=v;save();render()}
+function reset(){if(confirm('Delete all your data?')){S=mk();save();render()}}
+
+const V={
+week(){const c=S.cfg,H=[];for(let t=c.from;t<c.to;t++)H.push(`<div>${fmt(t)}</div>`);
+const ld=D.map((_,d)=>load(d));
+const cols=D.map((_,d)=>`<div class="col ${ld[d]>c.cap?'over':''}" style="height:${(c.to-c.from)*40}px">${S.ev.filter(e=>e.day===d).map(e=>`<div class="b ${e.kind}" style="top:${(e.s-c.from)*40}px;height:${hrs(e)*40-2}px" onclick="editEv('${e.id}')"><b>${esc(e.title)}</b><br>${fmt(e.s)}–${fmt(e.e)}</div>`).join('')}</div>`).join('');
+const busy=ld.findIndex(h=>h>c.cap);
+return(!S.ev.length&&!S.as.length?`<div class="card"><h2>Welcome to OffCourse</h2><p>Plan your study time without the last-minute cramming. Three steps:</p><p>1. Add your classes.<br>2. Add your assignments.<br>3. Press Generate my plan.</p><p class="mut">Want to look around first?</p><button class="p" onclick="sample()">Load sample week</button></div>`:'')+
+S.miss.map(m=>`<div class="card warn"><b>${esc(m.n)}:</b> ${m.t} Try raising the daily limit in Settings or moving the deadline.</div>`).join('')+
+`<div class="card"><div class="hd"><div><h2>This week</h2><div class="lg"><span><i style="background:#e6e4ec"></i>Class or busy</span><span><i style="background:var(--pu)"></i>Study</span><span><i style="background:var(--gr)"></i>With friends</span></div></div><button onclick="fixed()">Add class or event</button></div>
+<div class="wrap"><div class="grid"><div></div>${D.map(d=>`<div class="dh">${d}</div>`).join('')}<div class="tc">${H.join('')}</div>${cols}</div></div></div>
+<div class="card"><h2>Workload balance</h2><p class="mut">Study and group hours per day. Your daily limit is ${c.cap}h.</p>${D.map((d,i)=>`<div class="wl"><span>${d}</span><div class="bar ${ld[i]>c.cap?'warn':''}"><i style="width:${Math.min(100,ld[i]/c.cap*100)}%"></i></div><span>${ld[i]}h</span></div>`).join('')}${busy>=0?`<p class="warn">Looks like a busy ${D[busy]}. Want to spread some work earlier?</p>`:''}</div>`},
+
+assign(){const L=[...S.as].sort((a,b)=>a.due-b.due);
+return`<div class="card"><div class="hd"><div><h2>Assignments</h2><p class="mut">Sorted by deadline.</p></div><button class="p" onclick="editAs()">Add assignment</button></div>${L.length?L.map(a=>{const d=done(a),pc=Math.min(100,d/a.h*100),w=S.miss.find(m=>m.n===a.name);
+return`<div class="row ${a.done?'ok':''}"><div style="flex:1;min-width:200px"><label style="margin:0;color:var(--ink);font-size:15px"><input type="checkbox" ${a.done?'checked':''} onchange="S.as.find(x=>x.id==='${a.id}').done=this.checked;save();render()">${esc(a.name)}</label><span class="tag">${esc(a.course)}</span> <span class="mut">Due ${D[a.due]} · ${a.h}h · ${a.pr} priority</span><div class="bar" style="margin-top:8px"><i style="width:${pc}%"></i></div><span class="mut">${d}h of ${a.h}h scheduled</span>${w?`<div class="warn">${w.t}</div>`:''}</div><div><button class="g" onclick="editAs('${a.id}')">Edit</button></div></div>`}).join(''):'<p class="mut">No assignments yet. Add one or load the sample week.</p><button onclick="sample()">Load sample week</button>'}</div>`},
+
+classes(){const L=S.ev.filter(e=>!isW(e)).sort((a,b)=>a.day-b.day||a.s-b.s);
+return`<div class="card"><div class="hd"><div><h2>Classes and busy time</h2><p class="mut">The planner never moves these.</p></div><button class="p" onclick="fixed()">Add class or event</button></div>${L.length?L.map(e=>`<div class="row"><div><b>${esc(e.title)}</b><br><span class="mut">${D[e.day]} ${fmt(e.s)}–${fmt(e.e)}</span></div><button class="g" onclick="fixed(S.ev.find(x=>x.id==='${e.id}'))">Edit</button></div>`).join(''):'<p class="mut">No classes yet. Add your weekly classes so the planner knows when you are busy.</p>'}</div>`},
+
+friends(){SG=sugs();const mine=S.ev;
+const sg=SG.length?SG.map((x,i)=>`<div class="row"><div style="flex:1;min-width:200px">${esc(x.t)}</div><div><button class="p" onclick="takeSug(${i})">Schedule</button><button class="g" onclick="dismiss(${i})">Dismiss</button></div></div>`).join(''):'<p class="mut">No suggestions right now. Add classes and assignments to get some.</p>';
+const ss=S.ss.map(s=>{const j=joined(s),left=s.max-s.going.length,clash=!j&&mine.some(e=>e.day===s.day&&e.s<s.e&&e.e>s.s);
+return`<div class="row"><div style="flex:1;min-width:200px"><b>${esc(s.topic)}</b> <span class="tag ${s.type=='Study break'?'g':''}">${s.type}</span><br><span class="mut">${D[s.day]} ${fmt(s.s)}–${fmt(s.e)} · ${esc(s.place)} · by ${s.by}<br>Going: ${s.going.join(', ')} · ${left} spot${left==1?'':'s'} left</span>${clash?'<div class="warn">This clashes with something on your calendar.</div>':''}</div><button ${j?'':'class="p"'} ${!j&&left<1?'disabled':''} onclick="join('${s.id}')">${j?'Leave':'Join'}</button></div>`}).join('');
+let ft='<p class="mut">Pick one or more friends to see when you are all free.</p>';
+if(pick.length){const fs=FR.filter(f=>pick.includes(f.n));let r='';
+for(let d=0;d<7;d++)free(d,busyOf(d).concat(...fs.map(f=>fBusy(f,d)))).forEach(([s,e])=>{const a=Math.min(e,s+2);r+=`<div class="row"><div>${D[d]} ${fmt(s)}–${fmt(e)}</div><div><button onclick="book(${d},${s},${a},'Study')">Study ${a-s}h</button> <button onclick="book(${d},${s},${s+1},'Break')">Break 1h</button></div></div>`});
+ft=r||'<p class="mut">No shared free time this week. Try fewer friends.</p>'}
+return`<div class="card"><h2>Suggested for you</h2><p class="mut">Based on shared courses, deadlines and free time.</p>${sg}</div>
+<div class="card"><div class="hd"><div><h2>Open sessions</h2><p class="mut">Friends post, you join. No pressure.</p></div><button onclick="newSession()">Create a session</button></div>${ss}</div>
+<div class="card"><h2>Find a time</h2><div style="display:flex;gap:16px;flex-wrap:wrap;margin:10px 0">${FR.map(f=>`<label style="margin:0;color:var(--ink);font-size:15px"><input type="checkbox" ${pick.includes(f.n)?'checked':''} onchange="togglePick('${f.n}')">${f.n}</label>`).join('')}</div>${ft}</div>`},
+
+settings(){const c=S.cfg,sel=(k,arr)=>`<select onchange="setCfg('${k}',this.value)">${arr.map(v=>`<option ${v==c[k]?'selected':''}>${v}</option>`).join('')}</select>`;
+return`<div class="card"><h2>Settings</h2><label>Daily study limit (hours)<input type="number" min="1" max="12" value="${c.cap}" onchange="setCfg('cap',this.value)"></label><label>Earliest study time (hour, 24h)${sel('from',[6,7,8,9,10])}</label><label>Latest study time (hour, 24h)${sel('to',[18,19,20,21,22,23])}</label><label>Session length (hours)${sel('len',[1,1.5,2])}</label><label>Break between sessions (hours)${sel('brk',[.25,.5])}</label></div>
+<div class="card"><h2>Friend privacy</h2><p class="mut">By default friends only show as busy or free. Turn this on to share course names so OffCourse can find shared classes. Personal events always show as Busy.</p>${FR.map(f=>`<label style="color:var(--ink);font-size:15px"><input type="checkbox" ${(S.share[f.n]??f.share)?'checked':''} onchange="setShare('${f.n}',this.checked)">${f.n} shares courses</label>`).join('')}</div>
+<div class="card"><h2>Data</h2><p class="mut">Everything is saved in this browser only.</p><button onclick="sample()">Load sample week</button> <button onclick="reset()">Clear all data</button></div>`}};
+
+function render(){document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.t===tab));$('main').innerHTML=V[tab]()}
+render();
+</script></body></html>
