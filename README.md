@@ -6,7 +6,7 @@ A study planner for university students. It turns your classes and assignments i
 
 ## The Problem
 
-We've all been guilty of last-minute cramming. Many students sit down to study, but end up wasting time because they do not know what to work on first. Trying to track every deadline while managing a heavy workload causes stress, burnout, and unproductive study time.
+We've all been guilty of last-minute cramming. Many students sit down to study, but end up wasting time because we don't know what to work on first. Trying to track every deadline while managing a heavy workload causes stress, burnout, and unproductive study time.
 
 ## Inspiration
 
